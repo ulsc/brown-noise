@@ -2,6 +2,7 @@
 PREFIX ?= /usr/local
 BINDIR = $(PREFIX)/bin
 BINARY = brown_noise
+DESTDIR ?=
 
 .PHONY: all build install uninstall clean
 
@@ -12,13 +13,14 @@ build:
 	go build -o $(BINARY) .
 
 install: build
-	@echo "Installing $(BINARY) to $(BINDIR)..."
-	install -Dm755 $(BINARY) $(BINDIR)/$(BINARY)
-	@echo "Installed $(BINARY) to $(BINDIR)/$(BINARY)"
+	@echo "Installing $(BINARY) to $(DESTDIR)$(BINDIR)..."
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(BINARY) $(DESTDIR)$(BINDIR)/$(BINARY)
+	@echo "Installed $(BINARY) to $(DESTDIR)$(BINDIR)/$(BINARY)"
 
 uninstall:
-	@echo "Uninstalling $(BINARY) from $(BINDIR)..."
-	-rm -f $(BINDIR)/$(BINARY)
+	@echo "Uninstalling $(BINARY) from $(DESTDIR)$(BINDIR)..."
+	-rm -f $(DESTDIR)$(BINDIR)/$(BINARY)
 	@echo "Uninstalled."
 
 clean:
