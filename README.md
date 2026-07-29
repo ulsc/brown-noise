@@ -1,17 +1,23 @@
 # Brown Noise Generator
 
-High Performance / Low Footprint Brown Noise Generator in Golang.
+High-performance, low-footprint brown noise generator written in Go.
 
 Brown noise, also known as Brownian noise or red noise, is a type of noise signal that has a power spectral density inversely proportional to the square of the frequency. This creates a noise signal with a deeper sound compared to white or pink noise, making it ideal for various applications such as sleep, relaxation, and concentration.
 
 ## Features
 
 - Generates brown noise in real-time
-- Utilizes the [Oto](https://github.com/hajimehoshi/oto) library for cross-platform audio playback
+- Utilizes the [Oto](https://github.com/ebitengine/oto) library for cross-platform audio playback
 - Efficient noise generation algorithm
 - Can be toggled on and off using a simple command or script
 
 ## Installation
+
+Requirements:
+
+- Go 1.25 or newer
+- A working audio output device
+- On Debian/Ubuntu Linux, the Oto dependency also requires `libasound2-dev`
 
 1. Clone the repository:
 
@@ -25,65 +31,74 @@ git clone https://github.com/ulsc/brown-noise.git
 cd brown-noise
 ```
 
-4. Build the Go application:
+3. Build the Go application:
 
 ```bash
-go build -o brown_noise main.go
+go build -o brown_noise .
 ```
 
-This will generate an executable file called `brown_noise`.
+On Windows, use:
+
+```powershell
+go build -o brown_noise.exe .
+```
+
+This generates `brown_noise` (`brown_noise.exe` on Windows). Unix and macOS users can alternatively run `make build`, or `make install` to install the binary under `/usr/local/bin`.
 
 ## Usage
 
 ### Basic usage
 
-To start the brown noise generator, simply run the `brown_noise` executable:
+To start the brown noise generator on Unix or macOS:
 
 ```bash
 ./brown_noise
 ```
 
-Press `Ctrl + C` (`Command + C` on macOS) to stop the generator.
+On Windows:
+
+```powershell
+.\brown_noise.exe
+```
+
+Press `Ctrl+C` to stop the generator.
+
+Use `-alpha` to tune the noise depth. The default is `0.01`; lower values sound deeper, and accepted values are greater than `0` and no greater than `1`:
+
+```bash
+./brown_noise -alpha 0.005
+```
+
+On Windows:
+
+```powershell
+.\brown_noise.exe -alpha 0.005
+```
 
 ### Background execution
 
 You can run the brown noise generator in the background by using the `nohup` command:
 
 ```bash
-nohup ./brown_noise &
+nohup ./brown_noise > /dev/null 2>&1 &
+echo $!
 ```
 
-To stop the background process, find its process ID (PID) and use the `kill` command:
+To stop instances started under the installed executable name:
 
 ```bash
-pgrep -f "./brown_noise" | xargs kill
+pkill -x brown_noise
 ```
 
 ### Toggle script
 
-Create a script named `toggle_noise.sh` to easily toggle the brown noise generator on and off:
+The repository includes `toggle_noise.sh` for Unix and macOS. Install `brown_noise` somewhere on `PATH`, then run:
 
 ```bash
-#!/bin/zsh
-
-pid=$(pgrep -f "./brown_noise")
-
-if [ -z "$pid" ]; then
-  nohup ./brown_noise > /dev/null 2>&1 &
-  echo "Brown noise started."
-else
-  kill $pid
-  echo "Brown noise stopped."
-fi
+./toggle_noise.sh
 ```
 
-Make the script executable:
-
-```bash
-chmod +x toggle_noise.sh
-```
-
-Now, you can run `./toggle_noise.sh` to start or stop the brown noise generator based on its current state.
+The script uses exact process-name matching so it does not terminate unrelated commands whose arguments happen to contain `brown_noise`.
 
 ## Implementation Details
 
@@ -111,26 +126,24 @@ Compared to playing a pre-recorded brown noise MP3 or WAV file, the real-time ge
 
 ### Benchmarking
 
-The performance of the brown noise generator was measured using Go's built-in benchmarking functionality on a machine with the following specifications:
-
-- OS: macOS (darwin)
-- Architecture: amd64
-- CPU: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz
-
-The benchmark results for the `generateBrownNoise` function are:
+Run the generator benchmark on your system with:
 
 ```bash
-BenchmarkGenerateBrownNoise-16 2323 443095 ns/op
-BenchmarkFullLoop-16 1 2042681545 ns/op
+go test -bench=BrownNoise -benchmem
 ```
 
-For the `generateBrownNoise` function, it takes approximately 443,095 nanoseconds (around 0.443 milliseconds) to generate a single buffer of brown noise.
+Run the deterministic unit tests and race detector with:
 
-The full loop, including Oto library functions, takes approximately 2,042,681,545 nanoseconds (around 2.043 seconds) per iteration.
+```bash
+go test ./...
+go test -race ./...
+```
 
-Keep in mind that performance may vary depending on the hardware and system load.
+The audio-device integration test is opt-in because it opens the system audio device:
 
-It's recommended to run the benchmark multiple times and in different conditions to obtain a more accurate and consistent assessment of the performance.
+```bash
+BROWN_NOISE_AUDIO_TEST=1 go test -run TestOtoContextAndPlayer
+```
 
 ## Contributing
 
